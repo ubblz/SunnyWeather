@@ -1,13 +1,19 @@
 package com.example.sunnyweather.ui.weather
 
+import android.content.Context
 import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.InputMethod
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.ViewModelProvider
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.sunnyweather.R
 import com.example.sunnyweather.logic.model.Place
 import com.example.sunnyweather.logic.model.Weather
@@ -18,7 +24,7 @@ import java.util.*
 
 class WeatherActivity : AppCompatActivity() {
 
-    private val viewModel by lazy{ ViewModelProvider(this).get(WeatherViewModel::class.java) }
+    val viewModel by lazy{ ViewModelProvider(this).get(WeatherViewModel::class.java) }
     private val placeName by lazy { findViewById<TextView>(R.id.placeName) }
     private val currentTemp by lazy { findViewById<TextView>(R.id.currentTemp) }
     private val currentSky by lazy { findViewById<TextView>(R.id.currentSky) }
@@ -30,6 +36,9 @@ class WeatherActivity : AppCompatActivity() {
     private val ultravioletText by lazy { findViewById<TextView>(R.id.ultravioletText) }
     private val carWashingText by lazy { findViewById<TextView>(R.id.carWashingText) }
     private val weatherLayout by lazy { findViewById<ScrollView>(R.id.weatherLayout) }
+    private val swipeRefresh by lazy { findViewById<SwipeRefreshLayout>(R.id.swipeRefresh) }
+    val drawerLayout by lazy { findViewById<DrawerLayout>(R.id.drawerLayout) }
+    private val navBtn by lazy { findViewById<Button>(R.id.navBtn) }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,8 +68,40 @@ class WeatherActivity : AppCompatActivity() {
                 "无法成功获取天气信息".showToast()
                 it.exceptionOrNull()?.printStackTrace()
             }
+            swipeRefresh.isRefreshing = false
         }
+        swipeRefresh.setColorSchemeResources(com.google.android.material.R.color.design_default_color_primary)
+        refreshWeather()
+        swipeRefresh.setOnRefreshListener {
+            refreshWeather()
+        }
+
+        navBtn.setOnClickListener {
+            drawerLayout.openDrawer(GravityCompat.START)
+        }
+
+        drawerLayout.addDrawerListener(object : DrawerLayout.DrawerListener{
+            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
+            }
+
+            override fun onDrawerOpened(drawerView: View) {
+            }
+
+            override fun onDrawerClosed(drawerView: View) {
+            }
+
+            override fun onDrawerStateChanged(newState: Int) {
+                val manager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                manager.hideSoftInputFromWindow(drawerLayout.windowToken,InputMethodManager.HIDE_NOT_ALWAYS)
+            }
+        })
+
+
+    }
+
+    fun refreshWeather(){
         viewModel.refreshWeather(viewModel.locationLng,viewModel.locationLat)
+        swipeRefresh.isRefreshing = true
     }
 
     private fun showWeatherInfo(weather:Weather){
